@@ -56,7 +56,6 @@ void JoinSecurityCommand::Execute()
     
     // TODO: Make not super inefficient
     std::cout << "creating Simple Async Producer" << std::endl;
-    std::cout << "destination URI: " << strBrokerURI << std::endl;
     SimpleAsyncProducer* pSimpleAsyncProducer = new SimpleAsyncProducer(Configuration::Instance().BrokerURI, pReplyToDestination, false, true);
 
     std::cout << "sending UUID: " << strUUID << std::endl;
