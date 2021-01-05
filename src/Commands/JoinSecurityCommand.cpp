@@ -58,7 +58,7 @@ void JoinSecurityCommand::Execute()
     std::cout << "creating Simple Async Producer" << std::endl;
     SimpleAsyncProducer* pSimpleAsyncProducer = new SimpleAsyncProducer(Configuration::Instance().BrokerURI, pReplyToDestination, false, true);
 
-    std::cout << "sending UUID: " << strUUID << std::endl;
+    std::cout << "sending player UUID: " << strUUID << std::endl;
     pSimpleAsyncProducer->Send(strUUID);
     delete pSimpleAsyncProducer;
     
