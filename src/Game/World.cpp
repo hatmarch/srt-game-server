@@ -15,11 +15,11 @@
 #include "World.h"
 #include "B2DWorld.h"
 #include "AEntity.h"
-//#include "../../../ThirdParty/box2d/Box2D/Box2D/Box2D.h"
-#include <Box2D/Box2D.h>
-//#include "../../../ThirdParty/box2d/Box2D/Box2D/Common/b2Settings.h"
-#include <Box2D/Common/b2Settings.h>
-//#include <Box2D/b2_Settings.h>
+//#include "../../../ThirdParty/box2d/box2d/box2d/box2d.h"
+#include <box2d/box2d.h>
+//#include "../../../ThirdParty/box2d/box2d/box2d/Common/b2Settings.h"
+#include <box2d/Common/b2Settings.h>
+//#include <box2d/b2_Settings.h>
 //#include "../../../ThirdParty/xdispatch/include/xdispatch/dispatch.h"
 #include <Poco/Delegate.h>
 #include <cms/CMSException.h>

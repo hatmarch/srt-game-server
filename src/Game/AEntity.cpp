@@ -23,8 +23,8 @@
 #include "../Commands/JoinSecurityCommand.h"
 #include "../Commands/LeaveSecurityCommand.h"
 #include "../Shared/FactoryT.h"
-//#include "../../../ThirdParty/box2d/Box2D/Box2D/Box2D.h"
-#include <Box2D/Box2D.h>
+//#include "../../../ThirdParty/box2d/box2d/box2d/box2d.h"
+#include <box2d/box2d.h>
 #include <Poco/FunctionDelegate.h>
 //#include <iostream>
 //#include <bitset>

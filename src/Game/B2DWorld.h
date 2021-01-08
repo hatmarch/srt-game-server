@@ -16,8 +16,8 @@
 //   limitations under the License.
 
 #include "../Shared/Types.h"
-//#include "../../../ThirdParty/box2d/Box2D/Box2D/Box2D.h"
-#include <Box2D/Box2D.h>
+//#include "../../../ThirdParty/box2d/box2d/box2d/box2d.h"
+#include <box2d/box2d.h>
 //#include "../../../ThirdParty/xdispatch/include/xdispatch/dispatch.h"
 //#include "../../../ThirdParty/xdispatch/include/xdispatch/timer.h"
 #include <Poco/Mutex.h>
@@ -71,7 +71,7 @@ protected:
 	int32           velocityIterations;
     int32           positionIterations;
     
-    //xdispatch::queue*               m_pBox2DSerialDispatchQueue;
+    //xdispatch::queue*               m_pbox2dSerialDispatchQueue;
 
     // Constructor(s)
     B2DWorld();

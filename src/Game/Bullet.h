@@ -16,8 +16,8 @@
 //   limitations under the License.
 
 #include "AEntity.h"
-//#include "../../../ThirdParty/box2d/Box2D/Box2D/Box2D.h"
-#include <Box2D/Box2D.h>
+//#include "../../../ThirdParty/box2d/box2d/box2d/box2d.h"
+#include <box2d/box2d.h>
 #include <Poco/BasicEvent.h>
 #include <decaf/util/StlQueue.h>
 #include <string>

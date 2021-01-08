@@ -103,6 +103,6 @@ void Server::run()
         m_theEventDispatcher.Dispatch();
         m_theMessageDispatcher.Dispatch();
         
-        decaf::lang::Thread::currentThread()->sleep(15);
+        decaf::lang::Thread::currentThread()->sleep(1500);
     }
 }
