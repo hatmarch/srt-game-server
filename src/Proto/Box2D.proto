@@ -1,7 +1,7 @@
 syntax = "proto2";
-package Box2D;
+package box2d;
 
-//option java_package = "org.Box2D.proto";
+//option java_package = "org.box2d.proto";
 //option java_outer_classname = "Box2D";
 
 
