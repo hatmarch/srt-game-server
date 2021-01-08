@@ -35,6 +35,8 @@
 #include "../Shared/FactoryT.h"
 #include "activemq/library/ActiveMQCPP.h"
 #include <iostream>
+#include "../Logging/loguru.cpp"
+
 
 
 void usage(char **argv) {
@@ -49,6 +51,9 @@ void usage(char **argv) {
 
 int main(int argc, char* argv[])
 {
+	loguru::init(argc, argv);
+	LOG_F(INFO, "Hello log file!");
+
     //std::string     strSecurityInURI = "AAS.IN";
     //std::string     strSecurityOutURI = "AAS.OUT";
     std::string     strBrokerURI = "tcp://127.0.0.1:61613?wireFormat=stomp&keepAlive=true";
@@ -113,4 +118,5 @@ int main(int argc, char* argv[])
     pServer = NULL;
     
     activemq::library::ActiveMQCPP::shutdownLibrary();
+    return 0;
 }
