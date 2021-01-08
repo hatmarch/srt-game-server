@@ -49,7 +49,7 @@ AEntity::_Dependencies::_Dependencies(const std::string& strUUID, AB2DEntity* pB
 void AEntity::_Serializer::Serialize(const AEntity* pEntity, redhatgamedev::srt::EntityGameEventBuffer* pEntityGameEvent)
 {
     //using namespace std;
-    using namespace Box2D;
+    using namespace box2d;
     using namespace redhatgamedev::srt;
     
     assert(pEntityGameEvent);

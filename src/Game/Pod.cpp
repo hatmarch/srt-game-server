@@ -22,7 +22,7 @@
 #include "../Shared/Timer.h"
 #include "B2DPod.h"
 #include <Poco/Delegate.h>
-#include "../Proto/Box2D.pb.h"
+#include "../Proto/box2d.pb.h"
 #include "../Shared/MakeT.h"
 //#include "../../../ThirdParty/xdispatch/include/xdispatch/dispatch.h"
 #include <iostream>

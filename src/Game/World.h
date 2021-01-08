@@ -17,7 +17,7 @@
 
 #include "B2DWorld.h"
 //#include "AEntity.h"
-#include "../Proto/Box2D.pb.h"
+#include "../Proto/box2d.pb.h"
 //#include "../../../ThirdParty/xdispatch/include/xdispatch/dispatch.h"
 //#include "../../../ThirdParty/xdispatch/include/xdispatch/timer.h"
 #include <decaf/lang/Runnable.h>
@@ -70,7 +70,7 @@ protected:
     void Teardown();
     void b2Vec2ToPbVec2(b2Vec2* pb2Vec2);
     //void b2WorldToPbWorld(b2World* pb2World, ::Box2D::PbWorld*& pPbWorldDefault);
-    void b2WorldToPbWorld(b2World* pb2World, Box2D::PbWorld*& pPbWorldDefault);
+    void b2WorldToPbWorld(b2World* pb2World, box2d::PbWorld*& pPbWorldDefault);
     
 public:
     static B2DWorld*               m_pB2DWorld;
