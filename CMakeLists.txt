@@ -112,7 +112,7 @@ src/Proto/box2d.pb.cc
 src/Shared/Timer.cpp
         src/Application/Configuration.cpp src/Application/Configuration.h)
 
-find_library( BOX2_D_LIBRARY Box2D)
+find_library( BOX2_D_LIBRARY box2d)
 message( STATUS "BOX2_D_LIBRARY is ${BOX2_D_LIBRARY}")
 find_library( PROTOCOL_BUFFERS_LIBRARY protobuf)
 message( STATUS "PROTOCOL_BUFFERS_LIBRARY is ${PROTOCOL_BUFFERS_LIBRARY}")
