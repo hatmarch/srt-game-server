@@ -23,8 +23,8 @@
 #include "../Commands/JoinSecurityCommand.h"
 #include "../Commands/LeaveSecurityCommand.h"
 #include "../Shared/FactoryT.h"
-//#include "../../../ThirdParty/box2d/box2d/box2d/box2d.h"
-#include <box2d/box2d.h>
+//#include "../../../ThirdParty/Box2D/Box2D/Box2D/Box2D.h"
+#include <Box2D/Box2D.h>
 #include <Poco/FunctionDelegate.h>
 //#include <iostream>
 //#include <bitset>
@@ -49,7 +49,7 @@ AEntity::_Dependencies::_Dependencies(const std::string& strUUID, AB2DEntity* pB
 void AEntity::_Serializer::Serialize(const AEntity* pEntity, redhatgamedev::srt::EntityGameEventBuffer* pEntityGameEvent)
 {
     //using namespace std;
-    using namespace box2d;
+    using namespace Box2D;
     using namespace redhatgamedev::srt;
     
     assert(pEntityGameEvent);

@@ -16,7 +16,7 @@
 #if 0
 #include "../Application/Configuration.h"
 #include "../Proto/DualStick.pb.h"
-#include "../Proto/box2d.pb.h"
+#include "../Proto/Box2D.pb.h"
 #include "../Network/SimpleAsyncConsumer.h"
 #include <cms/CMSException.h>
 //#include <cms/Message.h>
@@ -28,7 +28,7 @@
 #include <iostream>
 
 using namespace DualStick;
-using namespace box2d;
+using namespace Box2D;
 using namespace cms;
 
 Input::_EventPublisher            Input::EventPublisher;

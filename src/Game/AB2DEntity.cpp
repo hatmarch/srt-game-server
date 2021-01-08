@@ -32,7 +32,7 @@ using namespace redhatgamedev::srt;
 
 void AB2DEntity::_Serializer::Serialize(const AB2DEntity* pB2DEntity, redhatgamedev::srt::EntityGameEventBuffer* pEntityGameEvent)
 {
-    using namespace box2d;
+    using namespace Box2D;
     
     assert(pEntityGameEvent);
     

@@ -15,11 +15,11 @@
 #include "World.h"
 #include "B2DWorld.h"
 #include "AEntity.h"
-//#include "../../../ThirdParty/box2d/box2d/box2d/box2d.h"
-#include <box2d/box2d.h>
-//#include "../../../ThirdParty/box2d/box2d/box2d/Common/b2Settings.h"
-#include <box2d/Common/b2Settings.h>
-//#include <box2d/b2_Settings.h>
+//#include "../../../ThirdParty/Box2D/Box2D/Box2D/Box2D.h"
+#include <Box2D/Box2D.h>
+//#include "../../../ThirdParty/Box2D/Box2D/Box2D/Common/b2Settings.h"
+#include <Box2D/Common/b2Settings.h>
+//#include <Box2D/b2_Settings.h>
 //#include "../../../ThirdParty/xdispatch/include/xdispatch/dispatch.h"
 #include <Poco/Delegate.h>
 #include <cms/CMSException.h>
@@ -31,7 +31,7 @@ B2DWorld*               World::m_pB2DWorld = NULL;
 
 using namespace decaf::lang;
 using namespace decaf::util::concurrent;
-using namespace box2d;
+using namespace Box2D;
 using namespace redhatgamedev::srt;
 using namespace cms;
 
@@ -64,9 +64,9 @@ void World::Setup()
     std::string     strWorldSimulationName = "WorldSimulationThread";
 
     //m_pB2DWorld = new B2DWorld();
-//    m_pSimulationSerialDispatchQueue = new xdispatch::queue("box2d");
+//    m_pSimulationSerialDispatchQueue = new xdispatch::queue("Box2D");
     
-    //std::cout << "Starting the world box2d simulation" << std::endl;
+    //std::cout << "Starting the world Box2D simulation" << std::endl;
     //m_pWorldSimulation = new World::Simulation(this);
 //    m_pWorldSimulationThread = new decaf::lang::Thread(m_pWorldSimulation, strWorldSimulationName);
 //    m_pWorldSimulationThread->start();

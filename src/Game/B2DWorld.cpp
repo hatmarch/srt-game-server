@@ -93,7 +93,7 @@ B2DWorld::B2DWorld() :
     velocityIterations(6),
     positionIterations(2)
 //    world(new b2World(*gravity)),
-    //m_pBox2DSerialDispatchQueue(new xdispatch::queue("box2d"))
+    //m_pBox2DSerialDispatchQueue(new xdispatch::queue("Box2D"))
 {
     //gravity = new b2Vec2(0.0f, -9.81f);
 //    gravity = new b2Vec2(0.0f, 0.0f);
@@ -106,7 +106,7 @@ B2DWorld::B2DWorld() :
 //	velocityIterations = 6;
 //	positionIterations = 2;
     
-//    m_pBox2DSerialDispatchQueue = new xdispatch::queue("box2d");
+//    m_pBox2DSerialDispatchQueue = new xdispatch::queue("Box2D");
 }
 
 // Destructor

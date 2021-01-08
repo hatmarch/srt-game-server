@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <map>
 #include <string>
-#include <box2d/box2d.h>
+#include <Box2D/Box2D.h>
 #include "json/json.h"
 
 using namespace std;

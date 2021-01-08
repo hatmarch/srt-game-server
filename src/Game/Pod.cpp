@@ -22,12 +22,13 @@
 #include "../Shared/Timer.h"
 #include "B2DPod.h"
 #include <Poco/Delegate.h>
-#include "../Proto/box2d.pb.h"
+#include "../Proto/Box2D.pb.h"
 #include "../Shared/MakeT.h"
 //#include "../../../ThirdParty/xdispatch/include/xdispatch/dispatch.h"
 #include <iostream>
 #include <iomanip>
 #include <assert.h>
+#include "../Logging/loguru.hpp"
 
 Poco::BasicEvent<Pod*&>      Pod::UpdatedEvent;
 uint32_t                     Pod::s_ui32Count = 1;
@@ -54,7 +55,7 @@ Pod::Pod(_Dependencies& theDependencies) :
     m_i16GroupCount = s_i16GroupCount;
     
     m_pB2DEntity->SetParentEntity(this);
-    std::cout << "Setting pod GroupIndex to " << m_i16GroupCount << std::endl;
+    LOG_SCOPE_F(INFO, "Setting pod GroupIndex: %i", m_i16GroupCount);
     m_pB2DEntity->SetGroupIndex(m_i16GroupCount);
     
     auto&      theDualStickRawInputCommandFactory = FactoryT<DualStickRawInputCommand, RawInputCommand::_RawInputDependencies>::Instance();
