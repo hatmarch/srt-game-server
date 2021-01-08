@@ -22,7 +22,7 @@
 #include "../Commands/CommandQueue.h"
 #include "../Game/B2DWorld.h"
 #include "../Game/Input.h"
-#include "../Proto/box2d.pb.h"
+#include "../Proto/Box2D.pb.h"
 #include <decaf/lang/Runnable.h>
 #include <string>
 
