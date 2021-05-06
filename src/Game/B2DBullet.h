@@ -17,8 +17,7 @@
 
 #include "AB2DEntity.h"
 #include <Poco/BasicEvent.h>
-//#include "../../../ThirdParty/box2d/Box2D/Box2D/Box2D.h"
-#include <Box2D/Box2D.h>
+#include <box2d/box2d.h>
 
 class AEntity;
 

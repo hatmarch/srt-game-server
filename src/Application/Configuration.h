@@ -16,32 +16,45 @@
 //   limitations under the License.
 
 #include <string>
-
+#include <yaml-cpp/yaml.h>
+#include <yaml-cpp/node/node.h>
 
 class Configuration {
 private:
-    std::string         m_strBrokerURI;
-    int                 m_intServerSleepCycle = 15;
+    static Configuration *m_pConInstance;  // The instance
+
+    // Config variables default values
+    std::string m_strBrokerUri     = "tcp://127.0.0.1:5672";
+    long        m_lSleepCycle      = 50; // milliseconds
+    std::string m_strCommandIn     = "COMMAND.IN";
+    std::string m_strGameEventOut  = "GAME.EVENT.OUT";
+    float       m_fForceMultiplier = 3000000.0; // newtons
+    float       m_fShipWidth       = 20.0; // meters
+    float       m_fShipLength      = 150.0; // meters
+    float       m_fFixtureDensity  = 6.66667;
 
 protected:
-    // Constructor(s)
-    Configuration() {};
+    // Constructor
+    Configuration() = default;
 
     // Destructor
-    ~Configuration() {};
+    ~Configuration() = default;
 
 public:
-    std::string&        BrokerURI = m_strBrokerURI;
-    int&                ServerSleepCycle = m_intServerSleepCycle;
+    // Config variables references to protected members for convenience
+    std::string &BrokerUri       = m_strBrokerUri;
+    long        &SleepCycle      = m_lSleepCycle;
+    std::string &CommandIn       = m_strCommandIn;
+    std::string &GameEventOut    = m_strGameEventOut;
+    float       &ForceMultiplier = m_fForceMultiplier;
+    float       &ShipWidth       = m_fShipWidth;
+    float       &ShipLength      = m_fShipLength;
+    float       &FixtureDensity  = m_fFixtureDensity;
 
+    void Init(int &argc, char *argv[]);
 
-    // Singleton(s)
-    static Configuration& Instance()
-    {
-        static Configuration theConfiguration;
-        return theConfiguration;
-    }
+    // Singleton
+    static Configuration &Instance();
 };
-
 
 #endif //SRT_GAME_SERVER_CONFIGURATION_H

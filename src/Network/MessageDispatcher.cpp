@@ -13,23 +13,25 @@
 //   limitations under the License.
 
 #include "MessageDispatcher.h"
-#include "SimpleAsyncProducer.h"
+#include "sender.h"
 #include "../Events/EventDispatcher.h"
 #include "../Proto/GameEventBuffer.pb.h"
+#include <proton/type_id.hpp>
+#include "../Logging/loguru.hpp"
 #include <Poco/Delegate.h>
-#include <cms/CMSException.h>
 #include <google/protobuf/message.h>
 #include <string>
+#include <vector>
 #include <assert.h>
 
 
 // Constructor
 MessageDispatcher::
 _Dependencies::
-_Dependencies(SimpleAsyncProducer* pSimpleAsyncProducer) :
-    m_pSimpleAsyncProducer(pSimpleAsyncProducer)
+_Dependencies(sender* psender) :
+    m_psender(psender)
 {
-    assert(m_pSimpleAsyncProducer);
+    assert(m_psender);
 }
 
 // Destructor
@@ -46,13 +48,13 @@ MessageDispatcher::MessageDispatcher(_Dependencies* pDependencies)
 {
     assert(pDependencies);
     
-    m_pSimpleAsyncProducer = pDependencies->m_pSimpleAsyncProducer;
+    m_psender = pDependencies->m_psender;
     
     EventDispatcher& theEventDispatcher = EventDispatcher::Instance();
     theEventDispatcher.EventDispatchedEvent += Poco::Delegate<MessageDispatcher, google::protobuf::Message*&>(this, &MessageDispatcher::HandleEventDispatchedEvent);
     
     
-    assert(m_pSimpleAsyncProducer);
+    assert(m_psender);
 }
 
 // Destructor
@@ -65,13 +67,14 @@ MessageDispatcher::~MessageDispatcher()
 // Helper(s)
 void MessageDispatcher::Enqueue(std::pair<const unsigned char*, unsigned long>* pMessagePair)
 {
-    m_aMessageQueue.lock();
+    m_aMessageQueueMutex.lock();
     m_aMessageQueue.push(pMessagePair);
-    m_aMessageQueue.unlock();
+    m_aMessageQueueMutex.unlock();
 }
 
 void MessageDispatcher::Enqueue(google::protobuf::Message* pEventMessage)
 {
+    LOG_SCOPE_FUNCTION(4);
     assert(pEventMessage);
     
     std::pair<const unsigned char*, unsigned long>* pMessagePair = MessageToPair(pEventMessage);
@@ -129,23 +132,44 @@ std::pair<const unsigned char*, unsigned long>* MessageDispatcher::MessageToPair
 // via the configured simple async producer
 void MessageDispatcher::Dispatch()
 {
-    m_aMessageQueue.lock();
+    int x = 1;
+    LOG_SCOPE_FUNCTION(4);
+    m_aMessageQueueMutex.lock();
     while (!m_aMessageQueue.empty())
     {
         try
         {
-            std::pair<const unsigned char*, unsigned long>* pMessagePair = m_aMessageQueue.pop();
+            std::pair<const unsigned char*, unsigned long>* pMessagePair = m_aMessageQueue.front();
+            m_aMessageQueue.pop();
             if (pMessagePair->second > 0)
             {
-                m_pSimpleAsyncProducer->Send(pMessagePair->first, (int)pMessagePair->second);
+                // TODO: Proton TESTME
+//                proton::message msg((const unsigned char*)pMessagePair->first);
+                std::string pre_proton = (const char*)(pMessagePair->first);
+                LOG_F(8, "pMessagePair length(): %i", pre_proton.length());
+                LOG_F(8, "pMessagePair second(): %i", pMessagePair->second);
+                proton::binary* body = new proton::binary(std::string((const char*)pMessagePair->first, pMessagePair->second));
+                proton::message msg(*body);
+//                msg->body(*body);
+                msg.content_type("proton::BINARY");
+                msg.content_encoding("proton::BINARY");
+
+                LOG_F(8, "message #: %i", x);
+                LOG_F(8, "proton msg body type is %s", proton::type_name(msg.body().type()).c_str());
+                LOG_F(8, "proton msg content_type is %s", msg.content_type().c_str());
+                LOG_F(8, "proton msg content_encoding is %s", msg.content_encoding().c_str());
+                LOG_F(7, "proton msg body is %s", proton::coerce<std::string>(msg.body()).c_str());
+
+                m_psender->send(msg);
+                x++;
             }
         }
-        catch ( cms::CMSException& e )
+        catch ( std::exception& e )
         {
-            e.printStackTrace();
+            LOG_F(INFO, e.what());
         }
     }
-    m_aMessageQueue.unlock();
+    m_aMessageQueueMutex.unlock();
 }
 
 // EventDispatcher event response

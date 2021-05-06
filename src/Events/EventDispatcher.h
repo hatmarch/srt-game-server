@@ -19,9 +19,9 @@
 #include "../Proto/EntityGameEventBuffer.pb.h"
 #include "EntityGameEventFactory.h"
 #include "SecurityGameEventFactory.h"
-//#include "../Shared/FactoryT.h"
 #include <Poco/BasicEvent.h>
-#include <decaf/util/StlQueue.h>
+#include <queue>
+#include <mutex>
 
 namespace google
 {
@@ -35,7 +35,6 @@ class Pod;
 class Bullet;
 class PodFactory;
 class BulletFactory;
-//class EntityGameEventFactory;
 class EntityGameEvent_Dependencies;
 class SecurityGameEvent_Dependencies;
 class JoinSecurityCommand;
@@ -71,8 +70,9 @@ protected:
     BulletFactory&                  m_aBulletFactory;
     FactoryT<redhatgamedev::srt::GameEventBuffer, EntityGameEvent_Dependencies>&              m_anEntityGameEventFactory;
     FactoryT<redhatgamedev::srt::GameEventBuffer, SecurityGameEvent_Dependencies>&            m_aSecurityGameEventFactory;
-    
-    decaf::util::StlQueue<google::protobuf::Message*>       m_anEventQueue;
+
+    std::queue<google::protobuf::Message*>       m_anEventQueue;
+    std::mutex                                   m_anEventQueueMutex;
 
     // Helper(s)
     void                            Enqueue(google::protobuf::Message* pMessage);
@@ -92,7 +92,7 @@ public:
     Poco::BasicEvent<google::protobuf::Message*&>   EventDispatchedEvent;
     
     // Singleton
-    static EventDispatcher& Instance(_Dependencies* pDependencies = NULL)//unsigned int uiCapacity)
+    static EventDispatcher& Instance(_Dependencies* pDependencies = NULL)
     {
         static EventDispatcher  anEventDispatcher(pDependencies);
         return anEventDispatcher;
@@ -120,5 +120,6 @@ public:
     void HandleJoinSecurityCommandExecutedEvent(const void* pSender, const std::string& strUUID);
     void HandleLeaveSecurityCommandExecutedEvent(const void* pSender, const std::string& strUUID);
 };
+
 
 #endif /* defined(__SRT__EventDispatcher__) */

@@ -22,7 +22,7 @@
 #include "B2DWorld.h"
 #include "AEntity.h"
 #include "../Proto/EntityGameEventBuffer.pb.h"
-//#include "../../../ThirdParty/xdispatch/include/xdispatch/dispatch.h"
+#include "../Logging/loguru.hpp"
 #include <assert.h>
 
 AB2DEntity::_Serializer                 AB2DEntity::Serializer;
@@ -32,12 +32,10 @@ using namespace redhatgamedev::srt;
 
 void AB2DEntity::_Serializer::Serialize(const AB2DEntity* pB2DEntity, redhatgamedev::srt::EntityGameEventBuffer* pEntityGameEvent)
 {
+    LOG_SCOPE_FUNCTION(4);
     using namespace box2d;
     
     assert(pEntityGameEvent);
-    
-    //int iPreCount = 0;
-    //int iPostCount = 0;
     
     b2Fixture*  pFixtureList = NULL;
     PbBody*     pPbBody = NULL;
@@ -70,8 +68,8 @@ void AB2DEntity::_Serializer::Serialize(const AB2DEntity* pB2DEntity, redhatgame
     pPbVec2Force->set_x(0.0f);
     pPbVec2Force->set_y(0.0f);
     pPbBody->set_allocated_force(pPbVec2Force);
-    
-    pEntity = static_cast<AEntity*>(pB2DEntity->m_pb2Body->GetUserData());
+
+    pEntity = (AEntity*)(pB2DEntity->m_pb2Body->GetUserData().pointer);
     assert(NULL != pEntity);
     pPbBody->set_uuid(pEntity->UUID);
     pPbBody->set_tag(pEntity->Tag);
@@ -83,8 +81,7 @@ void AB2DEntity::_Serializer::Serialize(const AB2DEntity* pB2DEntity, redhatgame
         pPbFixture = pPbBody->add_fixtures();
         assert(NULL != pPbFixture);
         //iPostCount = pPbBody->fixtures_size();
-        //assert(iPostCount > iPreCount);
-        
+
         pPbFixture->set_density(pFixture->GetDensity());
         pPbFixture->set_friction(pFixture->GetFriction());
     }
@@ -115,12 +112,14 @@ AB2DEntity::_AB2DDefinition::_AB2DDefinition()
 // Constructor(s)
 AB2DEntity::AB2DEntity()
 {
+    LOG_SCOPE_FUNCTION(4);
     assert(false);
 }
 
 AB2DEntity::AB2DEntity(b2Body* pb2Body) :
     m_pb2Body(pb2Body)
 {
+    LOG_SCOPE_FUNCTION(4);
     assert(m_pb2Body);
 }
 
@@ -128,11 +127,12 @@ AB2DEntity::AB2DEntity(const _AB2DDefinition& aAB2DDefinition, AEntity* pEntity)
     m_pb2Body(NULL),
     m_pb2Fixture(NULL)
 {
+    LOG_SCOPE_FUNCTION(4);
     assert(pEntity);
     
     m_pb2Body = B2DWorld::Factory().CreateBody(&aAB2DDefinition.BodyDef);
     m_pb2Fixture = m_pb2Body->CreateFixture(&aAB2DDefinition.FixtureDef);
-    m_pb2Body->SetUserData((void *)pEntity);
+    m_pb2Body->GetUserData().pointer = (uintptr_t)(pEntity);
     
     assert(m_pb2Fixture);
 }
@@ -144,7 +144,7 @@ void AB2DEntity::SetParentEntity(AEntity* pParentEntity)
     m_pParentEntity = pParentEntity;
     if (m_pb2Body)
     {
-        m_pb2Body->SetUserData((void*)pParentEntity);
+        m_pb2Body->GetUserData().pointer = (uintptr_t)(pParentEntity);
     }
 }
 
@@ -162,8 +162,6 @@ void AB2DEntity::SetGroupIndex(int16_t i16GroupIndex)
 // Destructor
 AB2DEntity::~AB2DEntity()
 {
-    //std::cout << "AB2DEntity::~AB2DEntity()..." << std::endl;
-    
     B2DWorld::Factory().DestroyBody(m_pb2Body);
     m_pb2Body = NULL;
 }

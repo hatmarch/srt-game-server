@@ -16,9 +16,9 @@
 //   limitations under the License.
 
 #include "AB2DEntity.h"
-//#include "../../../ThirdParty/box2d/Box2D/Box2D/Box2D.h"
-#include <Box2D/Box2D.h>
-#include <decaf/util/StlQueue.h>
+#include <box2d/box2d.h>
+#include <queue>
+#include <mutex>
 
 class AEntity;
 
@@ -32,7 +32,7 @@ public:
     {
     protected:
         const b2Vec2&           m_b2v2Position;
-        b2CircleShape           m_b2CircleShape;
+        b2PolygonShape          m_b2PolygonShape;
         
     public:
         // Constructor
@@ -43,7 +43,8 @@ public:
     };
     
 protected:
-    decaf::util::StlQueue<b2Vec2>       m_b2v2MoveQueue;
+    std::queue<b2Vec2>       m_b2v2MoveQueue;
+    std::mutex               m_b2v2MoveQueueMutex;
     
 public:
     // Constructor(s)
@@ -56,5 +57,6 @@ public:
     void Move(float fX, float fY);
     void Update();
 };
+
 
 #endif /* defined(__SRT__B2DPod__) */

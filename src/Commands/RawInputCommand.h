@@ -24,11 +24,10 @@ namespace google
         class Message;
     }
 }
-namespace cms
+namespace proton
 {
-    class BytesMessage;
+    class message;
 }
-//struct b2Vec2;
 
 
 class RawInputCommand :
@@ -42,7 +41,7 @@ public:
     protected:
     public:
         // Constructor
-        _RawInputDependencies(redhatgamedev::srt::CommandBuffer* pCommandBuffer, const cms::BytesMessage* pBytesMessage);
+        _RawInputDependencies(redhatgamedev::srt::CommandBuffer* pCommandBuffer, const proton::message* pBytesMessage);
         
         // Destructor
         ~_RawInputDependencies();
@@ -60,5 +59,6 @@ public:
     // Method(s)
     virtual void Execute() = 0;
 };
+
 
 #endif /* defined(__SRT__RawInputCommand__) */

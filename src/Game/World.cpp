@@ -15,26 +15,15 @@
 #include "World.h"
 #include "B2DWorld.h"
 #include "AEntity.h"
-//#include "../../../ThirdParty/box2d/Box2D/Box2D/Box2D.h"
-#include <Box2D/Box2D.h>
-//#include "../../../ThirdParty/box2d/Box2D/Box2D/Common/b2Settings.h"
-#include <Box2D/Common/b2Settings.h>
-//#include <Box2D/b2_Settings.h>
-//#include "../../../ThirdParty/xdispatch/include/xdispatch/dispatch.h"
+#include <box2d/box2d.h>
 #include <Poco/Delegate.h>
-#include <cms/CMSException.h>
-#include <decaf/lang/Thread.h>
 #include <assert.h>
-#include <iostream>
 #include "../Logging/loguru.hpp"
 
 B2DWorld*               World::m_pB2DWorld = NULL;
 
-using namespace decaf::lang;
-using namespace decaf::util::concurrent;
 using namespace box2d;
 using namespace redhatgamedev::srt;
-using namespace cms;
 
 
 // Constructor(s)
@@ -138,7 +127,7 @@ void World::b2WorldToPbWorld(b2World* pb2World, PbWorld*& pPbWorldDefault)
         pPbVec2Force->set_y(0.0f);
         pPbBody->set_allocated_force(pPbVec2Force);
         
-        pEntity = static_cast<AEntity*>(pBody->GetUserData());
+        pEntity = (AEntity*)(pBody->GetUserData().pointer);
         assert(NULL != pEntity);
         pPbBody->set_uuid(pEntity->UUID);
         pPbBody->set_tag(pEntity->Tag);

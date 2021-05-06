@@ -16,11 +16,11 @@
 #include "Server.h"
 #include "../Game/World.h"
 #include "../Game/AEntity.h"
-#include "decaf/lang/Thread.h"
-#include "decaf/lang/Runnable.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
+#include <chrono>
+#include <thread>
 #include <assert.h>
 #include "../Logging/loguru.hpp"
 
@@ -32,8 +32,8 @@ Server::Server(EventDispatcher& theEventDispatcher,
                CommandConsumer& theCommandConsumer,
                CommandQueue& theCommandQueue) :
     m_pWorld(NULL),
-    //m_pInput(NULL),
     m_pMainThread(NULL),
+    m_bStop(false),
     m_theEventDispatcher(theEventDispatcher),
     m_theMessageDispatcher(theMessageDispatcher),
     m_theMessageConsumer(theMessageConsumer),
@@ -59,23 +59,19 @@ void Server::Setup()
     AEntity::ClassSetup();
 
     m_pWorld = new World();
-    //m_pInput = new Input();
 
-    LOG_SCOPE_F(INFO, "Starting the server thread?");
-    m_pMainThread = new decaf::lang::Thread(this, strMainThreadName);
-    m_pMainThread->start();
+    LOG_SCOPE_F(INFO, "Starting the world producer");
+    m_pMainThread = new std::thread([this]() {run();});
 }
 
 void Server::Teardown()
 {
     LOG_SCOPE_F(INFO, "Tearing down the server...");
 
+    m_pMainThread->join();
     delete m_pMainThread;
     m_pMainThread = NULL;
     
-//    delete m_pInput;
-//    m_pInput = NULL;
-
     delete m_pWorld;
     m_pWorld = NULL;
     
@@ -85,13 +81,16 @@ void Server::Teardown()
 // Method(s)
 void Server::run()
 {
-    while (true)
+    while (!m_bStop)
     {
 		LOG_SCOPE_FUNCTION(2);
         // Receive incoming user commands
         LOG_F(2, "Handling incoming commands");
+        LOG_F(4, "Message Consumer Dispatch");
         m_theMessageConsumer.Dispatch();
+        LOG_F(4, "Command Consumer Consume");
         m_theCommandConsumer.Consume();
+        LOG_F(4, "Command Queue Execute");
         m_theCommandQueue.Execute();
         
         // Run simulation step
@@ -107,9 +106,17 @@ void Server::run()
         // if any client needs a world update take world snapshot
         // Update clients if required
         LOG_F(2, "Telling the clients what's going on");
+        LOG_F(4, "Event Dispatcher Dispatch");
         m_theEventDispatcher.Dispatch();
+        LOG_F(4, "Message Dispatcher Dispatch");
         m_theMessageDispatcher.Dispatch();
         
-        decaf::lang::Thread::currentThread()->sleep(Configuration::Instance().ServerSleepCycle);
+        LOG_F(4, "Game Sleep");
+        std::this_thread::sleep_for(std::chrono::milliseconds(Configuration::Instance().SleepCycle));
     }
+}
+
+void Server::stop()
+{
+    m_bStop = true;
 }

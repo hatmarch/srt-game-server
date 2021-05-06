@@ -23,16 +23,14 @@
 #include "../Commands/JoinSecurityCommand.h"
 #include "../Commands/LeaveSecurityCommand.h"
 #include "../Shared/FactoryT.h"
-//#include "../../../ThirdParty/box2d/Box2D/Box2D/Box2D.h"
-#include <Box2D/Box2D.h>
+#include <box2d/box2d.h>
 #include <Poco/FunctionDelegate.h>
-//#include <iostream>
-//#include <bitset>
 #include <assert.h>
+#include <random>
 #include "../Logging/loguru.hpp"
 
-decaf::util::StlQueue<AEntity*>     AEntity::s_EntityQueue;
-AEntity::_Serializer                AEntity::Serializer;
+std::queue<AEntity*>            AEntity::s_EntityQueue;
+AEntity::_Serializer            AEntity::Serializer;
 std::list<Pod*>                 AEntity::s_listPods;
 std::list<Pod*>                 AEntity::s_listPodsSwap;
 uint64_t                        AEntity::s_ui64Count = 1;
@@ -49,7 +47,6 @@ AEntity::_Dependencies::_Dependencies(const std::string& strUUID, AB2DEntity* pB
 
 void AEntity::_Serializer::Serialize(const AEntity* pEntity, redhatgamedev::srt::EntityGameEventBuffer* pEntityGameEvent)
 {
-    //using namespace std;
     using namespace box2d;
     using namespace redhatgamedev::srt;
     
@@ -59,16 +56,7 @@ void AEntity::_Serializer::Serialize(const AEntity* pEntity, redhatgamedev::srt:
 
     pEntityGameEvent->set_uuid(pEntity->m_strUUID);
     pEntityGameEvent->set_entitytag(pEntity->m_ui64Tag);
-    //EntityGameEvent* pEntityGameEvent = static_cast<EntityGameEvent*>(pMessage);
-    //cout << hex << pEntityGameEvent->type() << endl;
-//    if (pEntityGameEvent)
-//    {
-//        uint64_t ui64Tag = pEntityGameEvent->entitytag();
-//        bitset<sizeof(uint64_t)*8>    aBitSet(ui64Tag);
-//        //cout << hex << pEntityGameEvent->entitytag() << endl;
-//        cout << aBitSet << endl;
-//    }
-    
+
     pBody = pEntityGameEvent->mutable_body();
     pEntity->m_pB2DEntity->Serializer.Serialize(pEntity->m_pB2DEntity, pEntityGameEvent);
 }
@@ -82,8 +70,6 @@ void AEntity::_Serializer::Deserialisze(const redhatgamedev::srt::EntityGameEven
 //// Class
 void AEntity::ClassSetup()
 {
-    //CommandConsumer::Instance().EventConsumedEvent += Poco::FunctionDelegate<google::protobuf::Message*&>(&AEntity::HandleEventConsumedEvent);
-    
     auto& theJoinSecurityCommandFactory = FactoryT<JoinSecurityCommand, SecurityCommand::_SecurityDependencies>::Instance();
     auto& theLeaveSecurityCommandFactory = FactoryT<LeaveSecurityCommand, SecurityCommand::_SecurityDependencies>::Instance();
     
@@ -96,8 +82,6 @@ void AEntity::ClassSetup()
 
 void AEntity::ClassTeardown()
 {
-    //CommandConsumer::Instance().EventConsumedEvent -= Poco::FunctionDelegate<google::protobuf::Message*&>(&AEntity::HandleEventConsumedEvent);
-    
     auto& theJoinSecurityCommandFactory = FactoryT<JoinSecurityCommand, SecurityCommand::_SecurityDependencies>::Instance();
     auto& theLeaveSecurityCommandFactory = FactoryT<LeaveSecurityCommand, SecurityCommand::_SecurityDependencies>::Instance();
     
@@ -108,27 +92,57 @@ void AEntity::ClassTeardown()
     theLeaveSecurityCommandFactory.CreatedEvent -= Poco::FunctionDelegate<LeaveSecurityCommand*&>(&AEntity::HandleLeaveSecurityCommandFactoryCreated);
 }
 
+float get_random()
+{
+    static std::default_random_engine e;
+    static std::uniform_real_distribution<> dis(-1, 1); // rage 0 - 1
+    return dis(e);
+}
+
 void AEntity::AddPod(const std::string& strUUID)
 {
+    LOG_SCOPE_FUNCTION(4);
     assert(strUUID.length() > 0);
     
+    LOG_F(6, "Create a B2DPodFactory instance");
     B2DPodFactory& aB2DPodFactory = B2DPodFactory::Instance();
+    LOG_F(6, "Create a PodFactory instance");
     PodFactory& aPodFactory = PodFactory::Instance();
-    
+
+    // initialize a random X and Y position
+    // TODO: make the scaling constant a config option
+    // TODO: we need to figure out how to reasonably distribute players, as opposed to
+    //       just randomly plopping them on the board
+    LOG_F(6, "Create a random pod position");
     b2Vec2 b2v2Position;
-    b2v2Position.x = 0.0f;
-    b2v2Position.y = 0.0f;
+    b2v2Position.x = 600.0f * get_random();
+    b2v2Position.y = 600.0f * get_random();
     const b2Vec2& b2v2PositionRef = b2v2Position;
+
+    LOG_F(6, "Set the B2D Pod dependencies using the random position");
     B2DPod::_Dependencies aB2DPodDependencies(b2v2PositionRef);
+
+    LOG_F(6, "Create the B2D Pod using the dependencies");
     B2DPod* pB2DPod = aB2DPodFactory.Create(aB2DPodDependencies);
-    
+
+    LOG_F(6, "Set the Pod dependencies using the B2D Pod");
     Pod::_Dependencies aPodDependencies(strUUID, pB2DPod);
+
+    LOG_F(6, "Create the Pod using the dependencies");
     Pod* pPod = aPodFactory.Create(aPodDependencies);
+
+    LOG_F(6, "Reset the mass data (pPod -> B2D Entity -> B2D Pod");
+    pPod->m_pB2DEntity->m_pb2Body->ResetMassData();
+    LOG_F(6, "The Pod's current mass: %f", pPod->m_pB2DEntity->m_pb2Body->GetMass());
+    LOG_F(6, "The Pod's current inertia: %f", pPod->m_pB2DEntity->m_pb2Body->GetInertia());
+
+    LOG_F(6, "Push the Pod onto the list of pods");
     s_listPods.push_front(pPod);
 }
 
 void AEntity::RemovePod(const std::string& strUUID)
 {
+    LOG_SCOPE_FUNCTION(4);
     assert(strUUID.length() > 0);
     
     PodFactory& aPodFactory = PodFactory::Instance();
@@ -150,8 +164,8 @@ void AEntity::RemovePod(const std::string& strUUID)
 
 void AEntity::Update()
 {
-    LOG_SCOPE_FUNCTION(3);
-    LOG_SCOPE_F(3, "Doing the AEntity update");
+    LOG_SCOPE_FUNCTION(4);
+    LOG_SCOPE_F(6, "Doing the AEntity update");
     s_listPodsSwap = s_listPods;
     Pod*     pPod = NULL;
     
@@ -160,7 +174,7 @@ void AEntity::Update()
         pPod = s_listPodsSwap.front();
         s_listPodsSwap.pop_front();
         assert(pPod);
-        LOG_F(3, "Updating a specific Pod");
+        LOG_F(6, "Updating a specific Pod");
         pPod->Update();
     }
 }
@@ -168,6 +182,7 @@ void AEntity::Update()
 // Security::ICallbacks implementation
 void AEntity::OnSecurityRequestJoin(const void* pSender, const std::string& strUUID)
 {
+    LOG_SCOPE_FUNCTION(4);
     assert(!strUUID.empty());
     
     AddPod(strUUID);
@@ -175,39 +190,15 @@ void AEntity::OnSecurityRequestJoin(const void* pSender, const std::string& strU
 
 void AEntity::OnSecurityRequestLeave(const void* pSender, const std::string& strUUID)
 {
+    LOG_SCOPE_FUNCTION(4);
     assert(!strUUID.empty());
     
-//    m_pSimulationSerialDispatchQueue->sync([=]
-//    {
-        RemovePod(strUUID);
-//    });
+    RemovePod(strUUID);
 }
 
-// Event Consumer event response
-//void AEntity::HandleEventConsumedEvent(const void* pSender, google::protobuf::Message*& pMessage)
-//{
-//    GameEvent* pGameEvent = NULL;
-//    
-//    pGameEvent = dynamic_cast<GameEvent*>(pMessage);
-//}
-
-//void AEntity::HandleSecurityCommandFactoryCreated(const void* pSender, SecurityCommand*& pSecurityCommand)
-//{
-//    assert(pSecurityCommand);
-//    
-//    pSecurityCommand->JoinedEvent += Poco::FunctionDelegate<const std::string&>(&AEntity::OnSecurityRequestJoin);
-//    pSecurityCommand->LeftEvent += Poco::FunctionDelegate<const std::string&>(&AEntity::OnSecurityRequestLeave);
-//}
-//
-//void AEntity::HandleSecurityCommandFactoryDestroyed(const void* pSender, SecurityCommand*& pSecurityCommand)
-//{
-//    assert(pSecurityCommand);
-//    
-//    pSecurityCommand->LeftEvent -= Poco::FunctionDelegate<const std::string&>(&AEntity::OnSecurityRequestLeave);
-//    pSecurityCommand->JoinedEvent -= Poco::FunctionDelegate<const std::string&>(&AEntity::OnSecurityRequestJoin);
-//}
 void AEntity::HandleJoinSecurityCommandFactoryCreated(const void* pSender, JoinSecurityCommand*& pJoinSecurityCommand)
 {
+    LOG_SCOPE_FUNCTION(4);
     assert(pJoinSecurityCommand);
     
     pJoinSecurityCommand->ExecutedEvent += Poco::FunctionDelegate<const std::string&>(&AEntity::OnSecurityRequestJoin);
@@ -215,6 +206,7 @@ void AEntity::HandleJoinSecurityCommandFactoryCreated(const void* pSender, JoinS
 
 void AEntity::HandleJoinSecurityCommandFactoryDestroyed(const void* pSender, JoinSecurityCommand*& pJoinSecurityCommand)
 {
+    LOG_SCOPE_FUNCTION(4);
     assert(pJoinSecurityCommand);
     
     pJoinSecurityCommand->ExecutedEvent -= Poco::FunctionDelegate<const std::string&>(&AEntity::OnSecurityRequestJoin);
@@ -222,6 +214,7 @@ void AEntity::HandleJoinSecurityCommandFactoryDestroyed(const void* pSender, Joi
 
 void AEntity::HandleLeaveSecurityCommandFactoryCreated(const void* pSender, LeaveSecurityCommand*& pLeaveSecurityCommand)
 {
+    LOG_SCOPE_FUNCTION(4);
     assert(pLeaveSecurityCommand);
     
     pLeaveSecurityCommand->ExecutedEvent += Poco::FunctionDelegate<const std::string&>(&AEntity::OnSecurityRequestLeave);
@@ -229,6 +222,7 @@ void AEntity::HandleLeaveSecurityCommandFactoryCreated(const void* pSender, Leav
 
 void AEntity::HandleLeaveSecurityCommandFactoryDestroyed(const void* pSender, LeaveSecurityCommand*& pLeaveSecurityCommand)
 {
+    LOG_SCOPE_FUNCTION(4);
     assert(pLeaveSecurityCommand);
     
     pLeaveSecurityCommand->ExecutedEvent -= Poco::FunctionDelegate<const std::string&>(&AEntity::OnSecurityRequestLeave);
@@ -238,7 +232,7 @@ void AEntity::HandleLeaveSecurityCommandFactoryDestroyed(const void* pSender, Le
 // Constructor(s)
 AEntity::AEntity()
 {
-    // Necessary due to xdispatch sync compile errors? /// rnk 061413
+
 }
 
 AEntity::AEntity(const std::string& strUUID, uint64_t ui64Tag) :
@@ -265,8 +259,6 @@ AEntity::AEntity(const std::string& strUUID, uint64_t ui64Tag, AB2DEntity* pAB2D
 // Destructor(s)
 AEntity::~AEntity()
 {
-    //std::cout << "AEntity::~AEntity() " << m_ui64Tag << std::endl;
-
     m_strUUID.clear();
     m_ui64Tag = 0;
     --s_ui64Count;

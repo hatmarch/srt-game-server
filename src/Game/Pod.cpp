@@ -24,9 +24,6 @@
 #include <Poco/Delegate.h>
 #include "../Proto/box2d.pb.h"
 #include "../Shared/MakeT.h"
-//#include "../../../ThirdParty/xdispatch/include/xdispatch/dispatch.h"
-#include <iostream>
-#include <iomanip>
 #include <assert.h>
 #include "../Logging/loguru.hpp"
 
@@ -42,10 +39,9 @@ Pod::Pod(_Dependencies& theDependencies) :
             (uint64_t)MakeT<uint64_t>((uint32_t)AEntity::POD, s_ui32Count), theDependencies.pB2DEntity),
     m_i16GroupCount(0)
 {
+    LOG_SCOPE_FUNCTION(4);
     assert(m_pB2DEntity);
-    
-    //cout << hex << "Pod::Pod() " << m_ui64Tag << endl;
-    
+
     ++s_ui32Count;
     --s_i16GroupCount;
     if (s_i16GroupCount < -32767)
@@ -55,7 +51,7 @@ Pod::Pod(_Dependencies& theDependencies) :
     m_i16GroupCount = s_i16GroupCount;
     
     m_pB2DEntity->SetParentEntity(this);
-    LOG_F(INFO, "Setting pod GroupIndex to %i", m_i16GroupCount);
+    LOG_F(4, "Setting pod GroupIndex to %i", m_i16GroupCount);
     m_pB2DEntity->SetGroupIndex(m_i16GroupCount);
     
     auto&      theDualStickRawInputCommandFactory = FactoryT<DualStickRawInputCommand, RawInputCommand::_RawInputDependencies>::Instance();
@@ -72,57 +68,53 @@ Pod::~Pod()
     theDualStickRawInputCommandFactory.CreatedEvent -= Poco::Delegate<Pod, DualStickRawInputCommand*&>(this, &Pod::HandleDualStickRawInputCommandFactoryCreatedEvent);
 
     BulletFactory& aBulletFactory = BulletFactory::Instance();
-    
-    //cout << hex << "Pod::~Pod() " << m_ui64Tag << endl;
-    
-    //--s_ui32Count;
 
-    m_BulletQueue.lock();
+    m_BulletQueueMutex.lock();
     Bullet* pBullet = NULL;
     while (!(m_BulletQueue.empty()))
     {
-        pBullet = m_BulletQueue.pop();
+        pBullet = m_BulletQueue.front();
+        m_BulletQueue.pop_front();
         aBulletFactory.Destroy(pBullet);
     }
-    m_BulletQueue.unlock();
+    m_BulletQueueMutex.unlock();
     
     delete m_pBulletTimer;
     m_pBulletTimer = NULL;
-    
-    //EventPublisher.DestroyedEvent(this, AEntity::POD);
 }
 
 // Method(s)
 void Pod::Update()
 {
-    LOG_SCOPE_F(2, "Updating the pod: %s", UUID.c_str());
+    LOG_SCOPE_FUNCTION(4);
+    LOG_SCOPE_F(6, "Updating the pod: %s", UUID.c_str());
     assert(m_pB2DEntity);
     assert(m_pBulletTimer);
 
     B2DBulletFactory& aB2DBulletFactory = B2DBulletFactory::Instance();
     BulletFactory& aBulletFactory = BulletFactory::Instance();
 
-    m_b2v2MoveQueue.lock();
-    LOG_F(3, "Grabbing movement commands off the queue");
-    std::vector<b2Vec2> vecb2v2Move = m_b2v2MoveQueue.toArray();
+    m_b2v2MoveQueueMutex.lock();
+    LOG_F(6, "Grabbing movement commands off the queue");
+    std::vector<b2Vec2> vecb2v2Move = {m_b2v2MoveQueue.begin(), m_b2v2MoveQueue.end()};
     m_b2v2MoveQueue.clear();
-    m_b2v2MoveQueue.unlock();
+    m_b2v2MoveQueueMutex.unlock();
     
     for (int i = 0; i < vecb2v2Move.size(); ++i)
     {
-        LOG_SCOPE_F(3, "Moving the pod with a queued command vector");
+        LOG_SCOPE_F(6, "Moving the pod with a queued command vector");
         m_pB2DEntity->Move(vecb2v2Move[i].x, vecb2v2Move[i].y);
     }
     
-    m_b2v2ShootQueue.lock();
-    LOG_F(3, "Grabbing shooting commands off the queue");
-    std::vector<b2Vec2> vecb2v2Shoot = m_b2v2ShootQueue.toArray();
+    m_b2v2ShootQueueMutex.lock();
+    LOG_F(6, "Grabbing shooting commands off the queue");
+    std::vector<b2Vec2> vecb2v2Shoot = { m_b2v2ShootQueue.begin(), m_b2v2ShootQueue.end()};
     m_b2v2ShootQueue.clear();
-    m_b2v2ShootQueue.unlock();
+    m_b2v2ShootQueueMutex.unlock();
 
     for (int i = 0; i < vecb2v2Shoot.size(); ++i)
     {
-        LOG_SCOPE_F(3, "Check if the bullet timer is expired");
+        LOG_SCOPE_F(6, "Check if the bullet timer is expired");
         if (m_pBulletTimer->Status() == Rock2D::Timer::EXPIRED)
         {
             m_pBulletTimer->Restart();
@@ -135,15 +127,15 @@ void Pod::Update()
             
             pB2DBullet->SetGroupIndex(m_i16GroupCount);
             pBullet->Fire(vecb2v2Shoot[i]);
-            m_BulletQueue.lock();
-            m_BulletQueue.push(pBullet);
-            m_BulletQueue.unlock();
+            m_BulletQueueMutex.lock();
+            m_BulletQueue.push_back(pBullet);
+            m_BulletQueueMutex.unlock();
         }
     }
     
-    LOG_F(3, "Update our Rock2D timer");
+    LOG_F(6, "Update our Rock2D timer");
     Rock2D::Timer::Update();
-    LOG_F(3, "Update our B2D Pod to apply forces");
+    LOG_F(6, "Update our B2D Pod to apply forces");
     m_pB2DEntity->Update();
 
     Pod* pPod = this;
@@ -151,11 +143,12 @@ void Pod::Update()
     
     std::list<Bullet*>      aBulletToRemoveList;
     std::list<Bullet*>      aBulletToAddList;
-    m_BulletQueue.lock();
+    m_BulletQueueMutex.lock();
     while (!m_BulletQueue.empty())
     {
         Bullet* pBullet = NULL;
-        pBullet = m_BulletQueue.pop();
+        pBullet = m_BulletQueue.front();
+        m_BulletQueue.pop_front();
         pBullet->Update();
         if (!pBullet->Alive())
         {
@@ -171,7 +164,7 @@ void Pod::Update()
         Bullet* pBullet = NULL;
         pBullet = aBulletToAddList.front();
         aBulletToAddList.pop_front();
-        m_BulletQueue.push(pBullet);
+        m_BulletQueue.push_back(pBullet);
     }
     while (!aBulletToRemoveList.empty())
     {
@@ -180,7 +173,7 @@ void Pod::Update()
         aBulletToRemoveList.pop_front();
         aBulletFactory.Destroy(pBullet);
     }
-    m_BulletQueue.unlock();
+    m_BulletQueueMutex.unlock();
 }
 
 void Pod::HandleDualStickRawInputCommandFactoryCreatedEvent(const void* pSender, DualStickRawInputCommand*& pDualStickRawInputCommand)
@@ -212,9 +205,9 @@ void Pod::HandleDualStickRawInputCommandExecutedEvent(const void* pSender, const
         ((pDualStickInputCommand->m_b2v2Move.y > 0.0f) ||
          (pDualStickInputCommand->m_b2v2Move.y < 0.0f)))
     {
-        m_b2v2MoveQueue.lock();
-        m_b2v2MoveQueue.push(b2Vec2(pDualStickInputCommand->m_b2v2Move.x, pDualStickInputCommand->m_b2v2Move.y));
-        m_b2v2MoveQueue.unlock();
+        m_b2v2MoveQueueMutex.lock();
+        m_b2v2MoveQueue.push_back(b2Vec2(pDualStickInputCommand->m_b2v2Move.x, pDualStickInputCommand->m_b2v2Move.y));
+        m_b2v2MoveQueueMutex.unlock();
     }
     
     if (((pDualStickInputCommand->m_b2v2Shoot.x > 0.0f)  ||
@@ -222,8 +215,8 @@ void Pod::HandleDualStickRawInputCommandExecutedEvent(const void* pSender, const
         ((pDualStickInputCommand->m_b2v2Shoot.y > 0.0f)  ||
          (pDualStickInputCommand->m_b2v2Shoot.y < 0.0f)))
     {
-        m_b2v2ShootQueue.lock();
-        m_b2v2ShootQueue.push(b2Vec2(pDualStickInputCommand->m_b2v2Shoot.x, pDualStickInputCommand->m_b2v2Shoot.y));
-        m_b2v2ShootQueue.unlock();
+        m_b2v2ShootQueueMutex.lock();
+        m_b2v2ShootQueue.push_back(b2Vec2(pDualStickInputCommand->m_b2v2Shoot.x, pDualStickInputCommand->m_b2v2Shoot.y));
+        m_b2v2ShootQueueMutex.unlock();
     }
 }

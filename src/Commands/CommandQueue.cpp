@@ -20,6 +20,7 @@
 #include <iostream>
 #include "../Logging/loguru.hpp"
 
+
 // Constructor
 CommandQueue::
 _Dependencies::
@@ -52,58 +53,59 @@ CommandQueue::CommandQueue(_Dependencies* pDependencies) :
     m_aCommandConsumer(pDependencies->m_aCommandConsumer)
 {
     using namespace Poco;
-    using namespace cms;
+//    using namespace cms;
     
-    m_aCommandConsumer.CommandConsumedEvent += Delegate<CommandQueue, Tuple<BytesMessage*, google::protobuf::Message*>*& >(this, &CommandQueue::HandleCommandConsumedEvent);
+    m_aCommandConsumer.CommandConsumedEvent += Delegate<CommandQueue, Tuple<proton::message*, google::protobuf::Message*>*& >(this, &CommandQueue::HandleCommandConsumedEvent);
 }
 
 // Destructor
 CommandQueue::~CommandQueue()
 {
     using namespace Poco;
-    using namespace cms;
-    
-    m_aCommandConsumer.CommandConsumedEvent -= Delegate<CommandQueue, Tuple<BytesMessage*, google::protobuf::Message*>*& >(this, &CommandQueue::HandleCommandConsumedEvent);
+
+    m_aCommandConsumer.CommandConsumedEvent -= Delegate<CommandQueue, Tuple<proton::message*, google::protobuf::Message*>*& >(this, &CommandQueue::HandleCommandConsumedEvent);
 }
 
 // Method(s)
 void CommandQueue::Execute()
 {
     ACommand* pCommand = NULL;
-    m_aCommandQueue.lock();
+    m_aCommandQueueMutex.lock();
     while (!m_aCommandQueue.empty())
     {
-        pCommand = m_aCommandQueue.pop();
+        pCommand = m_aCommandQueue.front();
+        m_aCommandQueue.pop();
         pCommand->Execute();
     }
-    m_aCommandQueue.unlock();
+    m_aCommandQueueMutex.unlock();
 }
 
 // CommandConsumer Event response
-void CommandQueue::HandleCommandConsumedEvent(const void* pSender, Poco::Tuple<cms::BytesMessage*, google::protobuf::Message*>*& pTuple)
+void CommandQueue::HandleCommandConsumedEvent(const void* pSender, Poco::Tuple<proton::message*, google::protobuf::Message*>*& pTuple)
 {
     redhatgamedev::srt::CommandBuffer* pCommandBuffer = dynamic_cast<redhatgamedev::srt::CommandBuffer*>(pTuple->get<1>());
-    cms::BytesMessage* pBytesMessage = pTuple->get<0>();
+    proton::message* pBytesMessage = pTuple->get<0>();
     
     ACommand* pCommand = NULL;
 
-    LOG_SCOPE_F(1, "command event received");
-    LOG_SCOPE_F(1, "received command buffer type: %i", pCommandBuffer->type());
+    LOG_SCOPE_F(4, "command event received");
+    LOG_SCOPE_F(8, "received command buffer type: %i", pCommandBuffer->type());
 
     if (redhatgamedev::srt::CommandBuffer_CommandBufferType_SECURITY == pCommandBuffer->type())
     {
         const SecurityCommandBuffer& aSecurityCommandBuffer = pCommandBuffer->securitycommandbuffer();
-        LOG_SCOPE_F(1, "security command");
-        LOG_SCOPE_F(1, "received security command type: %i", aSecurityCommandBuffer.type());
+        LOG_SCOPE_F(4, "security command");
+        LOG_SCOPE_F(8, "received security command type: %i", aSecurityCommandBuffer.type());
 
         if (redhatgamedev::srt::SecurityCommandBuffer_SecurityCommandBufferType_JOIN == aSecurityCommandBuffer.type())
         {
-            LOG_SCOPE_F(1, "join message received");
+            LOG_SCOPE_F(4, "join message received");
             JoinSecurityCommand::_SecurityDependencies theJoinSecurityCommandDependencies(pCommandBuffer, pBytesMessage);
             pCommand = m_aJoinSecurityCommandFactory.Create(theJoinSecurityCommandDependencies);
         }
         else if (redhatgamedev::srt::SecurityCommandBuffer_SecurityCommandBufferType_LEAVE == aSecurityCommandBuffer.type())
         {
+            LOG_SCOPE_F(4, "leave message received");
             LeaveSecurityCommand::_SecurityDependencies theLeaveSecurityCommandDependencies(pCommandBuffer, pBytesMessage);
             pCommand = m_aLeaveSecurityCommandFactory.Create(theLeaveSecurityCommandDependencies);
         }
@@ -131,7 +133,7 @@ void CommandQueue::HandleCommandConsumedEvent(const void* pSender, Poco::Tuple<c
     }
     
     assert(pCommand);
-    m_aCommandQueue.lock();
+    m_aCommandQueueMutex.lock();
     m_aCommandQueue.push(pCommand);
-    m_aCommandQueue.unlock();
+    m_aCommandQueueMutex.unlock();
 }
